@@ -1,0 +1,49 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Env / secrets
+.env
+*.env
+
+# Skyfield data cache (downloaded automatically)
+backend/app/data/iers_b_and_final.ecsv
+backend/app/data/*.bsp
+backend/app/data/Leap_Second.dat
+*.bsp
+
+# pytest
+.pytest_cache/
+.coverage
+htmlcov/
+
+# IDE
+.vscode/
+.idea/
+*.suo
+*.user
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Frontend (Node)
+node_modules/
+frontend/dist/
+frontend/.env
+frontend/.env.local
+
+# Distribution / packaging
+*.egg
+MANIFEST
