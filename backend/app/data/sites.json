@@ -1,1 +1,350 @@
-[]
+[
+  {
+    "id": "nandi_hills",
+    "name": "Nandi Hills",
+    "state": "Karnataka",
+    "lat": 13.3702,
+    "lon": 77.6835,
+    "altitude_m": 1478,
+    "bortle_class": 4,
+    "horizon_profile": {
+      "description": "Open sky to north, west, and east. Low hills block south-east below ~10°. Good for most observations.",
+      "blocked_directions": [
+        {"azimuth_start": 120, "azimuth_end": 170, "max_blocked_altitude_deg": 10}
+      ]
+    },
+    "access": {
+      "road_quality": "good",
+      "night_access": true,
+      "night_access_notes": "Road open 24 hours. Gate may close after 10 PM on weekdays — arrive early or confirm with local authorities.",
+      "parking": true,
+      "entry_fee": false
+    },
+    "amenities": {
+      "restrooms": true,
+      "food_water_nearby": false,
+      "camping_allowed": false,
+      "shelter_available": false,
+      "mobile_signal": "moderate"
+    },
+    "city_distances_km": {
+      "Bangalore": 60,
+      "Mysore": 180
+    },
+    "best_months": ["October", "November", "December", "January", "February", "March"],
+    "notes": "One of the most accessible dark-sky sites from Bangalore. Popular sunrise point — stargazers should arrive before crowds. Fog possible in winter post-midnight."
+  },
+  {
+    "id": "skandagiri",
+    "name": "Skandagiri (Kalavara Durga)",
+    "state": "Karnataka",
+    "lat": 13.4246,
+    "lon": 77.6891,
+    "altitude_m": 1450,
+    "bortle_class": 4,
+    "horizon_profile": {
+      "description": "Summit offers near-360° open sky. Minor obstruction to the south from the ridge. Excellent for all-sky meteor watching.",
+      "blocked_directions": [
+        {"azimuth_start": 170, "azimuth_end": 200, "max_blocked_altitude_deg": 8}
+      ]
+    },
+    "access": {
+      "road_quality": "moderate",
+      "night_access": true,
+      "night_access_notes": "Night trek to summit required (~2 hours). Trekking permit needed — book via Karnataka Ecotourism. Not suitable for heavy telescope equipment.",
+      "parking": true,
+      "entry_fee": true
+    },
+    "amenities": {
+      "restrooms": false,
+      "food_water_nearby": false,
+      "camping_allowed": true,
+      "shelter_available": false,
+      "mobile_signal": "weak"
+    },
+    "city_distances_km": {
+      "Bangalore": 62
+    },
+    "best_months": ["October", "November", "December", "January", "February"],
+    "notes": "Best dark sky near Bangalore but requires a night trek. Carry all water and warm layers. Stunning for naked-eye and binocular observing. Not ideal if you need a telescope — carry weight is the constraint."
+  },
+  {
+    "id": "coorg_madikeri",
+    "name": "Coorg (Madikeri / Abbey Falls Road)",
+    "state": "Karnataka",
+    "lat": 12.4244,
+    "lon": 75.7382,
+    "altitude_m": 1150,
+    "bortle_class": 3,
+    "horizon_profile": {
+      "description": "Rolling hills with coffee plantations. Western horizon is open. Eastern horizon partially blocked by Western Ghats ridgeline below ~12°.",
+      "blocked_directions": [
+        {"azimuth_start": 60, "azimuth_end": 120, "max_blocked_altitude_deg": 12}
+      ]
+    },
+    "access": {
+      "road_quality": "good",
+      "night_access": true,
+      "night_access_notes": "Multiple homestays with open grounds suitable for telescope setup. Ghats roads can be foggy — drive carefully.",
+      "parking": true,
+      "entry_fee": false
+    },
+    "amenities": {
+      "restrooms": true,
+      "food_water_nearby": true,
+      "camping_allowed": true,
+      "shelter_available": true,
+      "mobile_signal": "moderate"
+    },
+    "city_distances_km": {
+      "Bangalore": 265,
+      "Mysore": 120,
+      "Mangalore": 135
+    },
+    "best_months": ["November", "December", "January", "February", "March"],
+    "notes": "Bortle 3 — one of the darkest accessible skies in southern Karnataka. Milky Way visible to the naked eye on clear nights. Leeches during monsoon. Best combined with a weekend homestay trip."
+  },
+  {
+    "id": "horsley_hills",
+    "name": "Horsley Hills",
+    "state": "Andhra Pradesh",
+    "lat": 13.6604,
+    "lon": 78.3977,
+    "altitude_m": 1290,
+    "bortle_class": 4,
+    "horizon_profile": {
+      "description": "Hilltop viewpoint with good sky coverage. South and south-west open. Some tree canopy obstruction on northern approaches.",
+      "blocked_directions": [
+        {"azimuth_start": 340, "azimuth_end": 30, "max_blocked_altitude_deg": 15}
+      ]
+    },
+    "access": {
+      "road_quality": "good",
+      "night_access": true,
+      "night_access_notes": "AP Tourism resort available. Roads well-maintained. Open access at night.",
+      "parking": true,
+      "entry_fee": true
+    },
+    "amenities": {
+      "restrooms": true,
+      "food_water_nearby": true,
+      "camping_allowed": false,
+      "shelter_available": true,
+      "mobile_signal": "good"
+    },
+    "city_distances_km": {
+      "Bangalore": 155,
+      "Tirupati": 140,
+      "Hyderabad": 380
+    },
+    "best_months": ["October", "November", "December", "January", "February", "March"],
+    "notes": "Underrated dark-sky site. Less crowded than Nandi Hills. AP Tourism resort makes overnight stays comfortable. Good compromise between darkness and amenities."
+  },
+  {
+    "id": "spiti_valley",
+    "name": "Spiti Valley (Kibber / Langza)",
+    "state": "Himachal Pradesh",
+    "lat": 32.3160,
+    "lon": 78.0080,
+    "altitude_m": 4200,
+    "bortle_class": 1,
+    "horizon_profile": {
+      "description": "High-altitude cold desert with near-perfect 360° horizon. Minimal light pollution. One of the darkest skies in India.",
+      "blocked_directions": []
+    },
+    "access": {
+      "road_quality": "poor",
+      "night_access": true,
+      "night_access_notes": "Accessible only May–October (Rohtang/Kunzum passes close in winter). Roads are rough. 4WD recommended. AMS risk above 3500m — acclimatize first.",
+      "parking": true,
+      "entry_fee": false
+    },
+    "amenities": {
+      "restrooms": true,
+      "food_water_nearby": true,
+      "camping_allowed": true,
+      "shelter_available": true,
+      "mobile_signal": "weak"
+    },
+    "city_distances_km": {
+      "Manali": 200,
+      "Shimla": 412,
+      "Delhi": 700
+    },
+    "best_months": ["May", "June", "July", "August", "September", "October"],
+    "notes": "Bortle 1 — the gold standard. Milky Way casts shadows here. Altitude means thinner atmosphere and steadier seeing. But requires serious travel planning. Nights can drop to -10°C even in summer. Altitude sickness is a real risk — spend 2 days acclimatizing."
+  },
+  {
+    "id": "rann_of_kutch",
+    "name": "Rann of Kutch (White Desert)",
+    "state": "Gujarat",
+    "lat": 23.7337,
+    "lon": 69.8597,
+    "altitude_m": 20,
+    "bortle_class": 2,
+    "horizon_profile": {
+      "description": "Perfectly flat salt desert — true 360° unobstructed horizon to ground level. No terrain interference whatsoever.",
+      "blocked_directions": []
+    },
+    "access": {
+      "road_quality": "good",
+      "night_access": true,
+      "night_access_notes": "Best during Rann Utsav (November–February). Permit required for border areas. Stay at tent cities or Dhordo resorts.",
+      "parking": true,
+      "entry_fee": true
+    },
+    "amenities": {
+      "restrooms": true,
+      "food_water_nearby": true,
+      "camping_allowed": true,
+      "shelter_available": true,
+      "mobile_signal": "moderate"
+    },
+    "city_distances_km": {
+      "Bhuj": 80,
+      "Ahmedabad": 400,
+      "Mumbai": 900
+    },
+    "best_months": ["November", "December", "January", "February"],
+    "notes": "Bortle 2 with an absolutely flat horizon — objects visible from the moment they rise. The white salt surface provides a surreal landscape under starlight. Extreme heat outside the winter window. Combine with Rann Utsav for a full experience."
+  },
+  {
+    "id": "mahabaleshwar",
+    "name": "Mahabaleshwar (Wilson Point / Arthur's Seat)",
+    "state": "Maharashtra",
+    "lat": 17.9237,
+    "lon": 73.6586,
+    "altitude_m": 1353,
+    "bortle_class": 4,
+    "horizon_profile": {
+      "description": "Western Ghats escarpment. Excellent western horizon (overlooks Konkan plains). Eastern horizon partially limited by hills.",
+      "blocked_directions": [
+        {"azimuth_start": 70, "azimuth_end": 130, "max_blocked_altitude_deg": 10}
+      ]
+    },
+    "access": {
+      "road_quality": "good",
+      "night_access": true,
+      "night_access_notes": "Multiple hotels and resorts. Wilson Point has road access. Ghat roads — drive carefully at night.",
+      "parking": true,
+      "entry_fee": false
+    },
+    "amenities": {
+      "restrooms": true,
+      "food_water_nearby": true,
+      "camping_allowed": false,
+      "shelter_available": true,
+      "mobile_signal": "good"
+    },
+    "city_distances_km": {
+      "Pune": 120,
+      "Mumbai": 260
+    },
+    "best_months": ["October", "November", "December", "January", "February", "March"],
+    "notes": "Best accessible dark sky from Mumbai/Pune corridor. Wilson Point at 1439m is the highest point — best for observation. Avoid monsoon season (extreme rainfall June–September). Fog common in late winter."
+  },
+  {
+    "id": "savandurga",
+    "name": "Savandurga (base area)",
+    "state": "Karnataka",
+    "lat": 12.9192,
+    "lon": 77.2929,
+    "altitude_m": 795,
+    "bortle_class": 5,
+    "horizon_profile": {
+      "description": "Large monolithic hill blocks eastern sky below ~25°. Western, northern, and southern horizons are open and flat.",
+      "blocked_directions": [
+        {"azimuth_start": 50, "azimuth_end": 120, "max_blocked_altitude_deg": 25}
+      ]
+    },
+    "access": {
+      "road_quality": "good",
+      "night_access": true,
+      "night_access_notes": "Trekking to summit banned. Base area accessible by road. Multiple spots along approach road suitable for observation.",
+      "parking": true,
+      "entry_fee": false
+    },
+    "amenities": {
+      "restrooms": false,
+      "food_water_nearby": false,
+      "camping_allowed": false,
+      "shelter_available": false,
+      "mobile_signal": "good"
+    },
+    "city_distances_km": {
+      "Bangalore": 48
+    },
+    "best_months": ["October", "November", "December", "January", "February", "March"],
+    "notes": "Closest dark-ish sky from Bangalore. Bortle 5 is not ideal for deep sky but adequate for planets, bright clusters, and meteor showers. Good for a quick weeknight trip. Eastern sky severely limited by the hill — plan observations accordingly."
+  },
+  {
+    "id": "hanle",
+    "name": "Hanle (Indian Astronomical Observatory)",
+    "state": "Ladakh",
+    "lat": 32.7794,
+    "lon": 78.9643,
+    "altitude_m": 4500,
+    "bortle_class": 1,
+    "horizon_profile": {
+      "description": "High-altitude plateau. Near-perfect 360° horizon. One of the world's best astronomical sites — home to India's highest optical telescope.",
+      "blocked_directions": []
+    },
+    "access": {
+      "road_quality": "poor",
+      "night_access": true,
+      "night_access_notes": "Requires Inner Line Permit (apply via Leh DC office). Accessible June–September only. No public transport — self-drive or hired vehicle from Leh (~250 km, 10 hours). Severe AMS risk.",
+      "parking": true,
+      "entry_fee": false
+    },
+    "amenities": {
+      "restrooms": true,
+      "food_water_nearby": true,
+      "camping_allowed": true,
+      "shelter_available": true,
+      "mobile_signal": "none"
+    },
+    "city_distances_km": {
+      "Leh": 250,
+      "Manali": 550,
+      "Delhi": 1050
+    },
+    "best_months": ["June", "July", "August", "September"],
+    "notes": "Bortle 1 — possibly the darkest accessible sky in India. Home to the Indian Astronomical Observatory (2m Chandra telescope, GROWTH-India telescope). Professional-grade seeing conditions. But extremely remote — plan as a multi-day expedition. Nights drop well below 0°C even in summer."
+  },
+  {
+    "id": "yelagiri",
+    "name": "Yelagiri Hills",
+    "state": "Tamil Nadu",
+    "lat": 12.5819,
+    "lon": 78.6440,
+    "altitude_m": 1050,
+    "bortle_class": 4,
+    "horizon_profile": {
+      "description": "Valley surrounded by hills. Southern and western sky is open above ~10°. Northern horizon partially limited by hill ranges.",
+      "blocked_directions": [
+        {"azimuth_start": 330, "azimuth_end": 40, "max_blocked_altitude_deg": 12}
+      ]
+    },
+    "access": {
+      "road_quality": "good",
+      "night_access": true,
+      "night_access_notes": "14 hairpin bends on the approach road — drive carefully at night. Multiple resorts available for overnight stays.",
+      "parking": true,
+      "entry_fee": false
+    },
+    "amenities": {
+      "restrooms": true,
+      "food_water_nearby": true,
+      "camping_allowed": true,
+      "shelter_available": true,
+      "mobile_signal": "moderate"
+    },
+    "city_distances_km": {
+      "Bangalore": 160,
+      "Chennai": 230,
+      "Vellore": 90
+    },
+    "best_months": ["October", "November", "December", "January", "February", "March"],
+    "notes": "Good dark-sky site accessible from both Bangalore and Chennai. Less crowded than Nandi Hills. The lake area offers open sky. Paragliding and trekking also available — can combine stargazing with other activities."
+  }
+]
