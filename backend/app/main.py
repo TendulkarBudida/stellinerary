@@ -5,6 +5,8 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
 from app.data.loader import load_events, load_sites
+from app.models import PlanRequest
+from app.orchestrator import generate_plan
 
 logging.basicConfig(level=settings.log_level)
 logger = logging.getLogger(__name__)
@@ -48,3 +50,21 @@ async def debug_events():
     """Return all loaded celestial events for verification."""
     events = load_events()
     return {"count": len(events), "events": [e.model_dump() for e in events]}
+
+
+# ── Main plan endpoint (Step 13) ──────────────────────────────────────
+
+@app.post("/plan", tags=["plan"])
+async def create_plan(request: PlanRequest):
+    """
+    Generate a complete stargazing expedition plan.
+
+    Runs the full orchestration pipeline:
+    Curator → Location Scout → Weather → Choreographer → Gear → Story
+
+    Returns an ExpeditionPlan with ranked events, chosen site, weather
+    forecast, time-ordered observation schedule, packing list, and
+    narrative context for each object.
+    """
+    plan = await generate_plan(request)
+    return plan.model_dump(mode="json")
