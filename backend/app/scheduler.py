@@ -10,7 +10,7 @@ from typing import Dict
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from app.models import ExpeditionPlan
-from app.agents.weather import fetch_astro_weather
+from app.agents.weather import get_weather_forecast
 from app.agents.contingency import check_contingency
 
 logger = logging.getLogger(__name__)
@@ -38,17 +38,13 @@ async def check_all_contingencies():
             
         # Fetch fresh weather
         try:
-            new_weather = await fetch_astro_weather(
+            new_weather = await get_weather_forecast(
+                site_id=plan.chosen_site.id,
                 lat=plan.chosen_site.lat,
-                lon=plan.chosen_site.lon, 
-                date_start=plan.request.date_start,
-                date_end=plan.request.date_end
+                lon=plan.chosen_site.lon,
             )
         except Exception as e:
             logger.error("Failed to fetch weather for plan %s: %s", plan_id, e)
-            continue
-            
-        if not new_weather:
             continue
             
         changed, updated_plan = check_contingency(plan, new_weather)

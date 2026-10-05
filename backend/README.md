@@ -26,10 +26,12 @@ Stellinerary operates an orchestrated pipeline mapping directly to user requests
 
 ### Approach 1: Virtual Environment
 ```bash
-python -m venv .venv
-source .venv/bin/activate  # On Windows: .venv\\Scripts\\activate
-pip install -r requirements.txt
-uvicorn app.main:app --reload
+# Create the environment once (Windows)
+py -m venv .venv
+
+# Install and run through the local environment; global Python is not used
+.venv\\Scripts\\python.exe -m pip install -r requirements.txt
+.venv\\Scripts\\python.exe -m uvicorn app.main:app --reload
 ```
 Head to `http://localhost:8000/docs` to test endpoints like `/health` or `/plan`.
 
@@ -43,7 +45,7 @@ docker run -p 8000:8000 stellinerary-backend
 ## Running Tests
 Run the 106-suite test pipeline ensuring 100% interoperability across math, orchestration, and schema validation.
 ```bash
-pytest -v
+.venv\\Scripts\\python.exe -m pytest -v
 ```
 
 ## Environment Variables
