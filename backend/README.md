@@ -49,9 +49,40 @@ Run the 106-suite test pipeline ensuring 100% interoperability across math, orch
 ```
 
 ## Environment Variables
-The application relies on OpenAI-compatible standards if attempting the actual Story agent. Refer to `.env.example`:
+Copy `.env.example` to `.env` only when you are ready to configure local values:
+
+```bash
+copy .env.example .env
 ```
-LLM_BASE_URL="https://api.openai.com/v1"
-LLM_API_KEY="sk-..."
-LLM_MODEL="gpt-4o-mini"
+
+The application relies on an OpenAI-compatible provider only when attempting the actual Story agent:
+
+```
+ENV="development"
+LOG_LEVEL="INFO"
+LLM_BASE_URL="https://openrouter.ai/api/v1"
+LLM_API_KEY=""
+LLM_MODEL="openrouter/free"
+```
+
+`LLM_API_KEY` is optional for offline/demo operation because the Story agent
+falls back to the event description when the provider is unavailable.
+
+`openrouter/free` lets OpenRouter select an available free model. It can still
+be temporarily unavailable or rate-limited; use a provider-backed model for
+reliable production use.
+
+## Tests and external APIs
+
+The default test command uses mocks and does not contact 7Timer or an LLM:
+
+```bash
+.venv\\Scripts\\python.exe -m pytest -q
+```
+
+The 7Timer integration test is skipped unless explicitly enabled:
+
+```bash
+set RUN_LIVE_API_TESTS=1
+.venv\\Scripts\\python.exe -m pytest -m live -q
 ```

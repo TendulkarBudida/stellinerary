@@ -108,7 +108,10 @@ async def fetch_astro_weather(lat: float, lon: float) -> dict | None:
     }
 
     try:
-        async with httpx.AsyncClient(timeout=REQUEST_TIMEOUT_SECONDS) as client:
+        async with httpx.AsyncClient(
+            timeout=REQUEST_TIMEOUT_SECONDS,
+            follow_redirects=True,
+        ) as client:
             response = await client.get(SEVEN_TIMER_BASE, params=params)
             response.raise_for_status()
             data = response.json()

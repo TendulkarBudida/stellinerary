@@ -10,6 +10,7 @@ Tests:
 """
 
 import pytest
+import os
 from datetime import datetime, timezone, timedelta
 from unittest.mock import AsyncMock, patch
 
@@ -144,8 +145,13 @@ class TestWeatherAgent:
 
 
 class TestLiveAPI:
-    """Sanity check against the real 7Timer API. Skipped if no network."""
+    """Optional sanity check against 7Timer; never runs by default."""
 
+    @pytest.mark.live
+    @pytest.mark.skipif(
+        os.getenv("RUN_LIVE_API_TESTS") != "1",
+        reason="Set RUN_LIVE_API_TESTS=1 to allow external API calls",
+    )
     @pytest.mark.asyncio
     async def test_live_fetch_nandi_hills(self):
         clear_cache()
