@@ -18,6 +18,16 @@ class EquipmentLevel(str, Enum):
     solar_filter = "solar_filter"
 
 
+class ForecastConfidence(str, Enum):
+    """How confidently a weather forecast applies to an observation night."""
+
+    high = "high"
+    medium = "medium"
+    low = "low"
+    unavailable_outside_horizon = "unavailable_outside_horizon"
+    unavailable_provider_error = "unavailable_provider_error"
+
+
 # ── Site schemas ──────────────────────────────────────────────────────
 
 class HorizonBlock(BaseModel):
@@ -116,6 +126,9 @@ class SiteWeatherForecast(BaseModel):
     fetched_at: datetime
     hourly: list[HourlyWeather] = Field(default_factory=list)
     summary: str = ""  # human-readable summary
+    forecast_start: Optional[datetime] = None
+    forecast_end: Optional[datetime] = None
+    forecast_confidence: ForecastConfidence = ForecastConfidence.unavailable_provider_error
 
 
 # ── Location Scout output ────────────────────────────────────────────
@@ -174,6 +187,17 @@ class ObservationSchedule(BaseModel):
     moon_phase_pct: Optional[float] = None
 
 
+class NightPlan(BaseModel):
+    """A schedule and weather applicability assessment for one local observing night."""
+
+    observation_date: date
+    schedule: Optional[ObservationSchedule] = None
+    weather_forecast: Optional[SiteWeatherForecast] = None
+    forecast_confidence: ForecastConfidence
+    suitability_score: float = Field(default=0.0, ge=0.0, le=1.0)
+    reasons: list[str] = Field(default_factory=list)
+
+
 # ── Story / narrative output ──────────────────────────────────────────
 
 class ObjectStory(BaseModel):
@@ -197,6 +221,13 @@ class PlanRequest(BaseModel):
     date_end: date
     equipment_level: EquipmentLevel = EquipmentLevel.naked_eye
 
+    def model_post_init(self, __context: object) -> None:
+        """Keep date-range validation next to the public request contract."""
+        if self.date_end < self.date_start:
+            raise ValueError("date_end must be on or after date_start")
+        if (self.date_end - self.date_start).days > 13:
+            raise ValueError("date range cannot exceed 14 nights")
+
 
 class ExpeditionPlan(BaseModel):
     """
@@ -217,6 +248,9 @@ class ExpeditionPlan(BaseModel):
 
     # Filled by Choreographer
     schedule: Optional[ObservationSchedule] = None
+    # One schedule per requested local observing night. The legacy schedule and
+    # weather_forecast fields continue to describe date_start for compatibility.
+    night_plans: list[NightPlan] = Field(default_factory=list)
 
     # Filled by Gear agent
     gear: Optional[GearList] = None

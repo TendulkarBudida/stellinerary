@@ -14,7 +14,7 @@ Key behaviors:
 import logging
 from datetime import datetime, timezone
 
-from app.models import HourlyWeather, SiteWeatherForecast
+from app.models import ForecastConfidence, HourlyWeather, SiteWeatherForecast
 from app.services.weather_client import fetch_astro_weather, parse_astro_forecast
 
 logger = logging.getLogger(__name__)
@@ -40,6 +40,7 @@ async def get_weather_forecast(
             site_id=site_id,
             fetched_at=datetime.now(timezone.utc),
             hourly=[],
+            forecast_confidence=ForecastConfidence.unavailable_provider_error,
             summary="⚠️ Weather data unavailable. Plan generated without weather verification — check local forecasts before heading out.",
         )
 
@@ -64,6 +65,13 @@ async def get_weather_forecast(
         fetched_at=datetime.now(timezone.utc),
         hourly=hourly,
         summary=summary,
+        forecast_start=hourly[0].datetime_utc if hourly else None,
+        forecast_end=hourly[-1].datetime_utc if hourly else None,
+        forecast_confidence=(
+            ForecastConfidence.medium
+            if hourly
+            else ForecastConfidence.unavailable_provider_error
+        ),
     )
 
 

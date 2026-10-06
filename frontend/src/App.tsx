@@ -3,7 +3,7 @@ import type { PlanRequest, ExpeditionPlan } from './types';
 import { fetchPlan } from './api';
 import InputForm from './components/InputForm';
 import Highlights from './components/Highlights';
-import SiteSchedule from './components/SiteSchedule';
+import NightPlans from './components/NightPlans';
 import GearStory from './components/GearStory';
 import './App.css';
 
@@ -54,8 +54,8 @@ function App() {
             </div>
             
             <Highlights events={plan.ranked_events} />
-            <SiteSchedule site={plan.chosen_site} weather={plan.weather_forecast} schedule={plan.schedule} />
-            <GearStory gear={plan.gear} stories={plan.stories} />
+            {plan.chosen_site && <NightPlans site={plan.chosen_site} nights={plan.night_plans} />}
+            {plan.gear && <GearStory gear={plan.gear} stories={plan.stories} />}
           </div>
         )}
       </main>

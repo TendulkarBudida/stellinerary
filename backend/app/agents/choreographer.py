@@ -368,7 +368,7 @@ def _azimuth_in_arc(az: float, start: int, end: int) -> bool:
 
 # ── Weather helpers ──────────────────────────────────────────────────
 
-def _get_clear_hours(weather: Optional[SiteWeatherForecast]) -> set[int]:
+def _get_clear_hours(weather: Optional[SiteWeatherForecast]) -> set[datetime]:
     """
     Extract the set of UTC hours that are forecast to be clear (cloud cover ≤ 40%).
     Returns an empty set if no weather data (treated as "assume clear").
@@ -377,17 +377,17 @@ def _get_clear_hours(weather: Optional[SiteWeatherForecast]) -> set[int]:
         return set()  # No data — assume clear
 
     return {
-        h.datetime_utc.hour
+        h.datetime_utc.replace(minute=0, second=0, microsecond=0)
         for h in weather.hourly
         if h.cloud_cover_pct <= 40
     }
 
 
-def _is_clear_at(dt: datetime, clear_hours: set[int]) -> bool:
+def _is_clear_at(dt: datetime, clear_hours: set[datetime]) -> bool:
     """Check if the forecast is clear at a given time."""
     if not clear_hours:
         return True  # No weather data — assume clear
-    return dt.hour in clear_hours
+    return dt.replace(minute=0, second=0, microsecond=0) in clear_hours
 
 
 # ── Time formatting ──────────────────────────────────────────────────

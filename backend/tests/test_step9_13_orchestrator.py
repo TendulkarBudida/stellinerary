@@ -129,6 +129,7 @@ class TestPlanEndpoint:
         assert "ranked_sites" in data
         assert "chosen_site" in data
         assert "schedule" in data
+        assert "night_plans" in data
         assert "gear" in data
         assert "stories" in data
         assert "generated_at" in data
@@ -146,3 +147,10 @@ class TestPlanEndpoint:
         # Schedule should have entries
         if data["schedule"]:
             assert len(data["schedule"]["entries"]) > 0
+
+        assert [night["observation_date"] for night in data["night_plans"]] == [
+            "2026-12-12",
+            "2026-12-13",
+            "2026-12-14",
+            "2026-12-15",
+        ]

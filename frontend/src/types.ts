@@ -47,7 +47,17 @@ export interface HourlyWeather {
 export interface SiteWeatherForecast {
     summary: string;
     hourly: HourlyWeather[];
+    forecast_start?: string | null;
+    forecast_end?: string | null;
+    forecast_confidence: ForecastConfidence;
 }
+
+export type ForecastConfidence =
+    | 'high'
+    | 'medium'
+    | 'low'
+    | 'unavailable_outside_horizon'
+    | 'unavailable_provider_error';
 
 export interface ScheduleEntry {
     time_local: string;
@@ -67,6 +77,15 @@ export interface ObservationSchedule {
     moon_rise?: string;
     moon_set?: string;
     moon_phase_pct?: number;
+}
+
+export interface NightPlan {
+    observation_date: string;
+    schedule?: ObservationSchedule | null;
+    weather_forecast?: SiteWeatherForecast | null;
+    forecast_confidence: ForecastConfidence;
+    suitability_score: number;
+    reasons: string[];
 }
 
 export interface GearItem {
@@ -90,10 +109,11 @@ export interface ExpeditionPlan {
     request: PlanRequest;
     ranked_events: CelestialEvent[];
     ranked_sites: RankedSite[];
-    chosen_site: Site;
-    weather_forecast: SiteWeatherForecast;
-    schedule: ObservationSchedule;
-    gear: GearList;
+    chosen_site?: Site | null;
+    weather_forecast?: SiteWeatherForecast | null;
+    schedule?: ObservationSchedule | null;
+    night_plans: NightPlan[];
+    gear?: GearList | null;
     stories: ObjectStory[];
     generated_at: string;
 }
