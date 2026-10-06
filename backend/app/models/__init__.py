@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import date, datetime
 from enum import Enum
-from typing import Optional
+from typing import Literal, Optional
 
 from pydantic import BaseModel, Field
 
@@ -200,6 +200,20 @@ class NightPlan(BaseModel):
     reasons: list[str] = Field(default_factory=list)
 
 
+class PlanOption(BaseModel):
+    """One actionable trip choice, including its schedule-specific gear."""
+
+    label: Literal["primary", "weather_fallback", "local_fallback"]
+    site: Site
+    observation_date: date
+    night_plan: NightPlan
+    gear: GearList
+    score: float = Field(ge=0.0, le=1.0)
+    confidence: ForecastConfidence
+    reasons: list[str] = Field(default_factory=list)
+    tradeoffs: list[str] = Field(default_factory=list)
+
+
 # ── Story / narrative output ──────────────────────────────────────────
 
 class ObjectStory(BaseModel):
@@ -260,6 +274,7 @@ class ExpeditionPlan(BaseModel):
     # One schedule per requested local observing night. The legacy schedule and
     # weather_forecast fields continue to describe date_start for compatibility.
     night_plans: list[NightPlan] = Field(default_factory=list)
+    options: list[PlanOption] = Field(default_factory=list)
 
     # Filled by Gear agent
     gear: Optional[GearList] = None

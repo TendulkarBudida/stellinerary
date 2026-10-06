@@ -97,6 +97,18 @@ export interface NightPlan {
     reasons: string[];
 }
 
+export interface PlanOption {
+    label: 'primary' | 'weather_fallback' | 'local_fallback';
+    site: Site;
+    observation_date: string;
+    night_plan: NightPlan;
+    gear: GearList;
+    score: number;
+    confidence: ForecastConfidence;
+    reasons: string[];
+    tradeoffs: string[];
+}
+
 export interface GearItem {
     name: string;
     category: string;
@@ -122,6 +134,7 @@ export interface ExpeditionPlan {
     weather_forecast?: SiteWeatherForecast | null;
     schedule?: ObservationSchedule | null;
     night_plans: NightPlan[];
+    options: PlanOption[];
     gear?: GearList | null;
     stories: ObjectStory[];
     generated_at: string;

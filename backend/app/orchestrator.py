@@ -32,7 +32,9 @@ from app.models import (
     ExpeditionPlan,
     ForecastConfidence,
     NightPlan,
+    PlanOption,
     PlanRequest,
+    RankedSite,
     SiteWeatherForecast,
 )
 
@@ -81,6 +83,70 @@ def _night_suitability_score(
         return 0.4
     clear_hours = sum(1 for hour in forecast.hourly if hour.cloud_cover_pct <= 30)
     return round(clear_hours / len(forecast.hourly), 3)
+
+
+def _night_reasons(confidence: ForecastConfidence) -> list[str]:
+    if confidence == ForecastConfidence.unavailable_outside_horizon:
+        return ["Weather forecast does not cover this night yet; recheck closer to the trip."]
+    if confidence == ForecastConfidence.unavailable_provider_error:
+        return ["Weather data is unavailable; verify local conditions before travelling."]
+    return ["Weather forecast covers this observing night."]
+
+
+def _best_night_plan(nights: list[NightPlan]) -> NightPlan:
+    """Prefer a covered, clearer night while retaining deterministic tie breaking."""
+    return max(nights, key=lambda night: night.suitability_score)
+
+
+async def _build_option(
+    ranked_site: RankedSite,
+    request: PlanRequest,
+    events: list,
+    label: str,
+    *,
+    primary: RankedSite | None = None,
+) -> PlanOption:
+    """Build one site-specific trip option and its schedule-specific gear."""
+    site = ranked_site.site
+    forecast = await get_weather_forecast(site.id, site.lat, site.lon)
+    nights: list[NightPlan] = []
+    for observation_date in _requested_nights(request):
+        confidence = _forecast_confidence_for_night(forecast, observation_date)
+        usable_weather = forecast if confidence in {
+            ForecastConfidence.high, ForecastConfidence.medium, ForecastConfidence.low,
+        } else None
+        nights.append(NightPlan(
+            observation_date=observation_date,
+            schedule=generate_schedule(site, events, usable_weather, observation_date),
+            weather_forecast=usable_weather,
+            forecast_confidence=confidence,
+            suitability_score=_night_suitability_score(forecast, confidence),
+            reasons=_night_reasons(confidence),
+        ))
+
+    best_night = _best_night_plan(nights)
+    option_score = round(0.65 * ranked_site.overall_score + 0.35 * best_night.suitability_score, 3)
+    reasons = [ranked_site.ranking_reason, *best_night.reasons]
+    tradeoffs: list[str] = []
+    if primary and ranked_site.distance_km > primary.distance_km:
+        tradeoffs.append(f"About {round(ranked_site.distance_km - primary.distance_km)} km farther than Plan A.")
+    if primary and ranked_site.site.bortle_class > primary.site.bortle_class:
+        tradeoffs.append("More light pollution than Plan A.")
+    if label == "weather_fallback":
+        tradeoffs.append("Switch if Plan A weather deteriorates or access changes.")
+    if label == "local_fallback":
+        tradeoffs.append("Closer alternative with a simpler, lower-travel outing.")
+    return PlanOption(
+        label=label,
+        site=site,
+        observation_date=best_night.observation_date,
+        night_plan=best_night,
+        gear=generate_gear_list(site, events, request.equipment_level, best_night.weather_forecast),
+        score=option_score,
+        confidence=best_night.forecast_confidence,
+        reasons=reasons,
+        tradeoffs=tradeoffs,
+    )
 
 
 async def generate_plan(request: PlanRequest) -> ExpeditionPlan:
@@ -200,6 +266,28 @@ async def generate_plan(request: PlanRequest) -> ExpeditionPlan:
         logger.info("   → %d items, %d warnings", len(plan.gear.items), len(plan.gear.warnings))
 
     # ── Step 6: Story — context and narrative ─────────────────────────
+    # Phase 3: package the recommendation with actionable alternatives. The
+    # legacy fields above remain populated from the primary option.
+    if plan.ranked_sites and plan.ranked_events:
+        primary_ranked = plan.ranked_sites[0]
+        candidates: list[tuple[str, RankedSite]] = [("primary", primary_ranked)]
+        if len(plan.ranked_sites) > 1:
+            candidates.append(("weather_fallback", plan.ranked_sites[1]))
+        local_ranked = min(plan.ranked_sites, key=lambda item: item.distance_km)
+        if local_ranked.site.id not in {candidate.site.id for _, candidate in candidates}:
+            candidates.append(("local_fallback", local_ranked))
+
+        for label, ranked_site in candidates:
+            plan.options.append(await _build_option(
+                ranked_site, request, plan.ranked_events, label, primary=primary_ranked,
+            ))
+
+        primary = plan.options[0]
+        plan.chosen_site = primary.site
+        plan.schedule = primary.night_plan.schedule
+        plan.weather_forecast = primary.night_plan.weather_forecast
+        plan.gear = primary.gear
+
     if plan.ranked_events:
         logger.info("📖 [6/6] Story: generating narratives for top events")
         for event in plan.ranked_events[:5]:  # Top 5 events get stories
