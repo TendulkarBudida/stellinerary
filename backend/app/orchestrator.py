@@ -112,6 +112,11 @@ async def generate_plan(request: PlanRequest) -> ExpeditionPlan:
         user_lon=request.user_lon,
         max_results=5,
         fetch_weather=True,
+        events=plan.ranked_events,
+        observation_dates=_requested_nights(request),
+        max_travel_minutes=request.max_travel_minutes,
+        max_distance_km=request.max_distance_km,
+        overnight_allowed=request.overnight_allowed,
     )
     logger.info("   → %d sites ranked", len(plan.ranked_sites))
 

@@ -140,6 +140,8 @@ class RankedSite(BaseModel):
     travel_time_estimate_min: Optional[int] = None
     weather_score: float = Field(default=0.0, ge=0, le=1.0, description="0=cloudy, 1=perfectly clear")
     bortle_score: float = Field(default=0.0, ge=0, le=1.0, description="0=light-polluted, 1=pristine")
+    event_visibility_score: float = Field(default=0.5, ge=0, le=1.0)
+    score_components: dict[str, float] = Field(default_factory=dict)
     overall_score: float = Field(default=0.0, ge=0, le=1.0)
     ranking_reason: str = ""
 
@@ -220,6 +222,13 @@ class PlanRequest(BaseModel):
     date_start: date
     date_end: date
     equipment_level: EquipmentLevel = EquipmentLevel.naked_eye
+    max_travel_minutes: Optional[int] = Field(default=None, ge=15, le=2880)
+    max_distance_km: Optional[float] = Field(default=None, gt=0, le=5000)
+    overnight_allowed: bool = False
+    experience_level: str = "beginner"
+    primary_goal: str = "visual_observing"
+    safety_preference: str = "established_sites"
+    accessibility_requirements: Optional[str] = Field(default=None, max_length=500)
 
     def model_post_init(self, __context: object) -> None:
         """Keep date-range validation next to the public request contract."""

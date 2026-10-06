@@ -20,6 +20,9 @@ const InputForm: React.FC<InputFormProps> = ({ onSubmit, isLoading }) => {
         return d.toISOString().split('T')[0];
     });
     const [equipment, setEquipment] = useState<PlanRequest['equipment_level']>('naked_eye');
+    const [maxTravelMinutes, setMaxTravelMinutes] = useState('180');
+    const [primaryGoal, setPrimaryGoal] = useState('visual_observing');
+    const [overnightAllowed, setOvernightAllowed] = useState(false);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -30,6 +33,9 @@ const InputForm: React.FC<InputFormProps> = ({ onSubmit, isLoading }) => {
             date_start: dateStart,
             date_end: dateEnd,
             equipment_level: equipment,
+            max_travel_minutes: maxTravelMinutes ? parseInt(maxTravelMinutes, 10) : undefined,
+            primary_goal: primaryGoal,
+            overnight_allowed: overnightAllowed,
         });
     };
 
@@ -70,6 +76,26 @@ const InputForm: React.FC<InputFormProps> = ({ onSubmit, isLoading }) => {
                         <option value="binoculars">Binoculars</option>
                         <option value="telescope">Telescope</option>
                     </select>
+                </div>
+                <div className="form-group row">
+                    <div className="col">
+                        <label>Maximum Travel Time (minutes)</label>
+                        <input type="number" min="15" value={maxTravelMinutes} onChange={(e) => setMaxTravelMinutes(e.target.value)} />
+                    </div>
+                    <div className="col">
+                        <label>Primary Goal</label>
+                        <select value={primaryGoal} onChange={(e) => setPrimaryGoal(e.target.value)}>
+                            <option value="visual_observing">Visual observing</option>
+                            <option value="meteor_shower">Meteor shower</option>
+                            <option value="planets">Planets</option>
+                            <option value="milky_way">Milky Way</option>
+                            <option value="deep_sky">Deep sky</option>
+                            <option value="astrophotography">Astrophotography</option>
+                        </select>
+                    </div>
+                </div>
+                <div className="form-group">
+                    <label><input type="checkbox" checked={overnightAllowed} onChange={(e) => setOvernightAllowed(e.target.checked)} /> Allow overnight / long-distance trips</label>
                 </div>
                 <button type="submit" disabled={isLoading} className="btn-primary">
                     {isLoading ? 'Orchestrating Plan...' : 'Generate Plan'}

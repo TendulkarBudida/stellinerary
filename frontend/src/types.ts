@@ -5,6 +5,13 @@ export interface PlanRequest {
     date_start: string;
     date_end: string;
     equipment_level: 'naked_eye' | 'binoculars' | 'telescope' | 'solar_filter';
+    max_travel_minutes?: number;
+    max_distance_km?: number;
+    overnight_allowed?: boolean;
+    experience_level?: string;
+    primary_goal?: string;
+    safety_preference?: string;
+    accessibility_requirements?: string;
 }
 
 export interface CelestialEvent {
@@ -35,6 +42,8 @@ export interface RankedSite {
     site: Site;
     distance_km: number;
     overall_score: number;
+    event_visibility_score: number;
+    score_components: Record<string, number>;
     ranking_reason: string;
 }
 
