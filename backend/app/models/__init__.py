@@ -258,6 +258,7 @@ class ExpeditionPlan(BaseModel):
     orchestration pipeline. Each agent enriches a different section.
     """
     request: PlanRequest
+    plan_id: Optional[str] = None
 
     # Filled by Curator
     ranked_events: list[CelestialEvent] = Field(default_factory=list)
@@ -284,4 +285,5 @@ class ExpeditionPlan(BaseModel):
 
     # Metadata
     generated_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
     contingency_note: Optional[str] = None

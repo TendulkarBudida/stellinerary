@@ -6,18 +6,14 @@ and triggering the Contingency Agent.
 """
 
 import logging
-from typing import Dict
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from app.models import ExpeditionPlan
 from app.agents.weather import get_weather_forecast
 from app.agents.contingency import check_contingency
+from app.services.plan_store import plan_store
 
 logger = logging.getLogger(__name__)
-
-# In-memory store for active plans.
-# In a real app, this would be a database (e.g., Postgres or Redis).
-ACTIVE_PLANS: Dict[str, ExpeditionPlan] = {}
 
 scheduler = AsyncIOScheduler()
 
@@ -27,12 +23,14 @@ async def check_all_contingencies():
     Background job that loops through all active plans,
     fetches fresh weather for their sites, and runs the Contingency Agent.
     """
-    if not ACTIVE_PLANS:
+    active_plans = plan_store.active()
+    if not active_plans:
         return
         
-    logger.info("Executing background contingency check for %d active plans...", len(ACTIVE_PLANS))
+    logger.info("Executing background contingency check for %d active plans...", len(active_plans))
     
-    for plan_id, plan in list(ACTIVE_PLANS.items()):
+    for plan in active_plans:
+        plan_id = plan.plan_id or "unknown"
         if not plan.chosen_site or not plan.request:
             continue
             
@@ -51,10 +49,8 @@ async def check_all_contingencies():
         
         if changed:
             logger.warning("Plan %s was UPDATED due to weather contingency!", plan_id)
-            # Store updated plan
-            ACTIVE_PLANS[plan_id] = updated_plan
-            
-            # In a real app we'd dispatch a push notification or email to the user here.
+            updated_plan.plan_id = plan.plan_id
+            plan_store.save(updated_plan)
 
 
 def start_scheduler():

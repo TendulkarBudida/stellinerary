@@ -21,6 +21,7 @@ env/
 backend/app/data/iers_b_and_final.ecsv
 backend/app/data/*.bsp
 backend/app/data/Leap_Second.dat
+backend/app/data/stellinerary-plans.db
 *.bsp
 
 # pytest

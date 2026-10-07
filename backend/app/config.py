@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     # App
     env: str = "development"
     log_level: str = "INFO"
+    plan_store_path: str = ""
 
     # Generic LLM client (OpenAI-compatible)
     llm_base_url: str = "https://api.openai.com/v1"

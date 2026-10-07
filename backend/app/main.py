@@ -1,12 +1,14 @@
 import logging
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
 from app.data.loader import load_events, load_sites
 from app.models import PlanRequest
 from app.orchestrator import generate_plan
+from app.services.plan_store import plan_store
+from app.scheduler import start_scheduler, stop_scheduler
 
 logging.basicConfig(level=settings.log_level)
 logger = logging.getLogger(__name__)
@@ -23,6 +25,20 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.on_event("startup")
+async def start_background_services() -> None:
+    if not getattr(start_scheduler, "_started", False):
+        start_scheduler()
+        setattr(start_scheduler, "_started", True)
+
+
+@app.on_event("shutdown")
+async def stop_background_services() -> None:
+    if getattr(start_scheduler, "_started", False):
+        stop_scheduler()
+        setattr(start_scheduler, "_started", False)
 
 
 @app.get("/health", tags=["meta"])
@@ -67,4 +83,27 @@ async def create_plan(request: PlanRequest):
     narrative context for each object.
     """
     plan = await generate_plan(request)
+    plan_store.save(plan)
     return plan.model_dump(mode="json")
+
+
+@app.get("/plans/{plan_id}", tags=["plan"])
+async def get_plan(plan_id: str):
+    """Retrieve a persisted plan, including any contingency updates."""
+    plan = plan_store.get(plan_id)
+    if plan is None:
+        raise HTTPException(status_code=404, detail="Plan not found")
+    return plan.model_dump(mode="json")
+
+
+@app.post("/plans/{plan_id}/refresh", tags=["plan"])
+async def refresh_plan(plan_id: str):
+    """Regenerate a stored plan with current weather while preserving its ID."""
+    existing = plan_store.get(plan_id)
+    if existing is None:
+        raise HTTPException(status_code=404, detail="Plan not found")
+    refreshed = await generate_plan(existing.request)
+    refreshed.plan_id = plan_id
+    refreshed.contingency_note = "Plan refreshed using the latest available conditions."
+    plan_store.save(refreshed)
+    return refreshed.model_dump(mode="json")
