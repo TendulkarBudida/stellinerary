@@ -23,6 +23,20 @@ REQUEST_TIMEOUT_SECONDS = 15
 # Simple in-memory cache: key = "lat,lon" → (timestamp, data)
 _cache: dict[str, tuple[float, dict]] = {}
 
+# Cache statistics for observability
+_cache_stats = {"hits": 0, "misses": 0}
+
+
+def get_cache_stats() -> dict[str, int]:
+    """Return cache hit/miss statistics."""
+    return dict(_cache_stats)
+
+
+def reset_cache_stats() -> None:
+    """Reset cache statistics (useful for testing)."""
+    _cache_stats["hits"] = 0
+    _cache_stats["misses"] = 0
+
 
 # ── 7Timer response decoding tables ──────────────────────────────────
 
@@ -98,7 +112,10 @@ async def fetch_astro_weather(lat: float, lon: float) -> dict | None:
 
     if _is_cache_valid(key):
         logger.debug("Weather cache hit for %s", key)
+        _cache_stats["hits"] += 1
         return _cache[key][1]
+
+    _cache_stats["misses"] += 1
 
     params = {
         "product": "astro",

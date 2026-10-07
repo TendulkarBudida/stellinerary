@@ -21,6 +21,8 @@ The interdependencies:
 
 import logging
 from datetime import date, datetime, time, timedelta, timezone
+from time import perf_counter
+from uuid import uuid4
 
 from app.agents.choreographer import generate_schedule
 from app.agents.curator import curate_events
@@ -37,6 +39,8 @@ from app.models import (
     RankedSite,
     SiteWeatherForecast,
 )
+from app.services.metrics import PipelineMetrics, metrics_collector
+from app.services.weather_client import get_cache_stats
 
 logger = logging.getLogger(__name__)
 
@@ -105,10 +109,16 @@ async def _build_option(
     label: str,
     *,
     primary: RankedSite | None = None,
+    metrics: PipelineMetrics | None = None,
 ) -> PlanOption:
     """Build one site-specific trip option and its schedule-specific gear."""
     site = ranked_site.site
+    start = perf_counter()
     forecast = await get_weather_forecast(site.id, site.lat, site.lon)
+    if metrics is not None:
+        metrics_collector.record_weather_latency(metrics, (perf_counter() - start) * 1000)
+        if forecast is None or not forecast.hourly:
+            metrics_collector.record_weather_error(metrics)
     nights: list[NightPlan] = []
     for observation_date in _requested_nights(request):
         confidence = _forecast_confidence_for_night(forecast, observation_date)
@@ -156,7 +166,9 @@ async def generate_plan(request: PlanRequest) -> ExpeditionPlan:
     Each step enriches the ExpeditionPlan state. If any step fails,
     the pipeline continues with degraded output rather than crashing.
     """
-    plan = ExpeditionPlan(request=request)
+    metrics = metrics_collector.start_generation()
+    plan = ExpeditionPlan(request=request, plan_id=str(uuid4()))
+    metrics.plan_id = plan.plan_id or ""
 
     # ── Step 1: Curator — what's worth seeing? ────────────────────────
     logger.info("🌟 [1/6] Curator: finding events for %s to %s", request.date_start, request.date_end)
@@ -173,6 +185,11 @@ async def generate_plan(request: PlanRequest) -> ExpeditionPlan:
     # ── Step 2: Location Scout — where to go? ─────────────────────────
     logger.info("📍 [2/6] Location Scout: ranking sites near (%.2f, %.2f)", request.user_lat, request.user_lon)
 
+    from app.data.loader import load_sites
+    metrics.candidates_before_shortlist = len(load_sites())
+
+    cache_before = get_cache_stats()
+    weather_start = perf_counter()
     plan.ranked_sites = await rank_sites(
         user_lat=request.user_lat,
         user_lon=request.user_lon,
@@ -184,6 +201,12 @@ async def generate_plan(request: PlanRequest) -> ExpeditionPlan:
         max_distance_km=request.max_distance_km,
         overnight_allowed=request.overnight_allowed,
     )
+    weather_elapsed = (perf_counter() - weather_start) * 1000
+    metrics_collector.record_weather_latency(metrics, weather_elapsed)
+    cache_after = get_cache_stats()
+    metrics.weather_cache_hits = cache_after["hits"] - cache_before["hits"]
+    metrics.weather_cache_misses = cache_after["misses"] - cache_before["misses"]
+    metrics.candidates_after_shortlist = len(plan.ranked_sites)
     logger.info("   → %d sites ranked", len(plan.ranked_sites))
 
     if plan.ranked_sites:
@@ -207,20 +230,28 @@ async def generate_plan(request: PlanRequest) -> ExpeditionPlan:
     # ── Step 3: Weather — what's the forecast at the chosen site? ─────
     if plan.chosen_site:
         logger.info("🌤️ [3/6] Weather: fetching forecast for %s", plan.chosen_site.name)
+        weather_start = perf_counter()
         plan.weather_forecast = await get_weather_forecast(
             plan.chosen_site.id,
             plan.chosen_site.lat,
             plan.chosen_site.lon,
         )
-        logger.info("   → %d hourly data points, summary: %s",
-                     len(plan.weather_forecast.hourly),
-                     plan.weather_forecast.summary[:80])
+        weather_elapsed = (perf_counter() - weather_start) * 1000
+        metrics_collector.record_weather_latency(metrics, weather_elapsed)
+        if plan.weather_forecast is None or not plan.weather_forecast.hourly:
+            metrics_collector.record_weather_error(metrics)
+
+        if plan.weather_forecast:
+            logger.info("   → %d hourly data points, summary: %s",
+                         len(plan.weather_forecast.hourly),
+                         plan.weather_forecast.summary[:80])
 
     # ── Step 4: Choreographer — the observation schedule ──────────────
     if plan.chosen_site and plan.ranked_events:
         logger.info("⏱️ [4/6] Choreographer: building schedule")
         for observation_date in _requested_nights(request):
             confidence = _forecast_confidence_for_night(plan.weather_forecast, observation_date)
+            metrics.forecast_coverage_status = confidence.value
             usable_weather = plan.weather_forecast if confidence in {
                 ForecastConfidence.high,
                 ForecastConfidence.medium,
@@ -280,6 +311,7 @@ async def generate_plan(request: PlanRequest) -> ExpeditionPlan:
         for label, ranked_site in candidates:
             plan.options.append(await _build_option(
                 ranked_site, request, plan.ranked_events, label, primary=primary_ranked,
+                metrics=metrics,
             ))
 
         primary = plan.options[0]
@@ -287,18 +319,25 @@ async def generate_plan(request: PlanRequest) -> ExpeditionPlan:
         plan.schedule = primary.night_plan.schedule
         plan.weather_forecast = primary.night_plan.weather_forecast
         plan.gear = primary.gear
+        metrics.selected_option_label = primary.label
 
     if plan.ranked_events:
         logger.info("📖 [6/6] Story: generating narratives for top events")
         for event in plan.ranked_events[:5]:  # Top 5 events get stories
-            try:
-                story = await generate_story_for_event(event)
-                plan.stories.append(story)
-            except Exception as e:
-                logger.warning("   → Story generation failed for %s: %s", event.name, e)
+            llm_start = perf_counter()
+            story = await generate_story_for_event(event)
+            llm_elapsed = (perf_counter() - llm_start) * 1000
+            metrics_collector.record_llm_latency(metrics, llm_elapsed)
+            if story.story_text == (event.description or f"Observe the beauty of {event.name}."):
+                metrics_collector.record_llm_failure(metrics)
+                metrics_collector.record_llm_fallback(metrics)
+            plan.stories.append(story)
         logger.info("   → %d stories generated", len(plan.stories))
 
     plan.generated_at = datetime.now(timezone.utc)
+
+    metrics.plan_id = plan.plan_id or ""
+    metrics_collector.finish_generation(metrics)
 
     logger.info("✅ Plan generation complete!")
     return plan
