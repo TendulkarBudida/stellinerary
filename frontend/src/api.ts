@@ -6,19 +6,44 @@ export const normaliseApiBase = (value?: string): string =>
 
 const API_BASE = normaliseApiBase(import.meta.env.VITE_API_BASE_URL);
 
+async function authHeaders(): Promise<Record<string, string>> {
+    try {
+        const { supabase } = await import('./auth/supabase');
+        const { data } = (await supabase?.auth.getSession()) ?? { data: { session: null } };
+        const token = data.session?.access_token;
+        return token ? { Authorization: `Bearer ${token}` } : {};
+    } catch {
+        return {};
+    }
+}
+
 export const fetchPlan = async (request: PlanRequest): Promise<ExpeditionPlan> => {
-    const response = await axios.post<ExpeditionPlan>(`${API_BASE}/plan`, request);
+    const response = await axios.post<ExpeditionPlan>(`${API_BASE}/plan`, request, {
+        headers: await authHeaders(),
+    });
     return response.data;
 };
 
 export const fetchPlanById = async (planId: string): Promise<ExpeditionPlan> => {
-    const response = await axios.get<ExpeditionPlan>(`${API_BASE}/plans/${planId}`);
+    const response = await axios.get<ExpeditionPlan>(`${API_BASE}/plans/${planId}`, {
+        headers: await authHeaders(),
+    });
     return response.data;
 };
 
 export const refreshPlan = async (planId: string): Promise<ExpeditionPlan> => {
-    const response = await axios.post<ExpeditionPlan>(`${API_BASE}/plans/${planId}/refresh`);
+    const response = await axios.post<ExpeditionPlan>(
+        `${API_BASE}/plans/${planId}/refresh`,
+        {},
+        { headers: await authHeaders() },
+    );
     return response.data;
+};
+
+export const deletePlan = async (planId: string): Promise<void> => {
+    await axios.delete(`${API_BASE}/plans/${planId}`, {
+        headers: await authHeaders(),
+    });
 };
 
 export interface PlanSummary {
@@ -30,7 +55,9 @@ export interface PlanSummary {
 }
 
 export const fetchPlans = async (): Promise<PlanSummary[]> => {
-    const response = await axios.get<PlanSummary[]>(`${API_BASE}/plans`);
+    const response = await axios.get<PlanSummary[]>(`${API_BASE}/plans`, {
+        headers: await authHeaders(),
+    });
     return response.data;
 };
 

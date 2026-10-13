@@ -7,8 +7,11 @@ from app.config import settings
 from app.data.loader import load_events, load_sites
 from app.models import PlanRequest
 from app.orchestrator import generate_plan
+from app.services.auth import get_optional_user_id
 from app.services.plan_store import plan_store
+from app.services import trip_store
 from app.scheduler import start_scheduler, stop_scheduler
+from fastapi import Depends
 
 logging.basicConfig(level=settings.log_level)
 logger = logging.getLogger(__name__)
@@ -70,8 +73,32 @@ async def debug_events():
 
 # ── Main plan endpoint (Step 13) ──────────────────────────────────────
 
+async def _save_plan(plan, user_id: str | None):
+    """Persist a plan: per-user Supabase row when logged in, else local SQLite."""
+    if user_id and trip_store.is_configured():
+        try:
+            await trip_store.save_trip(user_id, plan)
+            return
+        except Exception as e:
+            logger.warning("Supabase trip save failed, falling back to local store: %s", e)
+    plan_store.save(plan)
+
+
+async def _load_plan(plan_id: str, user_id: str | None):
+    """Load a plan the caller may see: own Supabase row first, then local store."""
+    if user_id and trip_store.is_configured():
+        try:
+            owned = await trip_store.get_trip(user_id, plan_id)
+            if owned is not None:
+                return owned, "supabase"
+        except Exception as e:
+            logger.warning("Supabase trip lookup failed, trying local store: %s", e)
+    stored = plan_store.get(plan_id)
+    return (stored, "local") if stored is not None else (None, "local")
+
+
 @app.post("/plan", tags=["plan"])
-async def create_plan(request: PlanRequest):
+async def create_plan(request: PlanRequest, user_id: str | None = Depends(get_optional_user_id)):
     """
     Generate a complete stargazing expedition plan.
 
@@ -81,15 +108,23 @@ async def create_plan(request: PlanRequest):
     Returns an ExpeditionPlan with ranked events, chosen site, weather
     forecast, time-ordered observation schedule, packing list, and
     narrative context for each object.
+
+    Logged-in users' plans are stored under their account; anonymous
+    plans use the local store.
     """
     plan = await generate_plan(request)
-    plan_store.save(plan)
+    await _save_plan(plan, user_id)
     return plan.model_dump(mode="json")
 
 
 @app.get("/plans", tags=["plan"])
-async def list_plans():
+async def list_plans(user_id: str | None = Depends(get_optional_user_id)):
     """List upcoming persisted plans (newest update first)."""
+    if user_id and trip_store.is_configured():
+        try:
+            return await trip_store.list_trips(user_id)
+        except Exception as e:
+            logger.warning("Supabase trip list failed, falling back to local store: %s", e)
     plans = plan_store.active()
     summaries = [
         {
@@ -106,22 +141,39 @@ async def list_plans():
 
 
 @app.get("/plans/{plan_id}", tags=["plan"])
-async def get_plan(plan_id: str):
+async def get_plan(plan_id: str, user_id: str | None = Depends(get_optional_user_id)):
     """Retrieve a persisted plan, including any contingency updates."""
-    plan = plan_store.get(plan_id)
+    plan, _ = await _load_plan(plan_id, user_id)
     if plan is None:
         raise HTTPException(status_code=404, detail="Plan not found")
     return plan.model_dump(mode="json")
 
 
+@app.delete("/plans/{plan_id}", tags=["plan"])
+async def delete_plan(plan_id: str, user_id: str | None = Depends(get_optional_user_id)):
+    """Delete a persisted plan. Logged-in users delete their own row; anonymous deletes local."""
+    if user_id and trip_store.is_configured():
+        try:
+            if await trip_store.delete_trip(user_id, plan_id):
+                return {"deleted": plan_id}
+            raise HTTPException(status_code=404, detail="Plan not found")
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.warning("Supabase trip delete failed, trying local store: %s", e)
+    if plan_store.delete(plan_id):
+        return {"deleted": plan_id}
+    raise HTTPException(status_code=404, detail="Plan not found")
+
+
 @app.post("/plans/{plan_id}/refresh", tags=["plan"])
-async def refresh_plan(plan_id: str):
+async def refresh_plan(plan_id: str, user_id: str | None = Depends(get_optional_user_id)):
     """Regenerate a stored plan with current weather while preserving its ID."""
-    existing = plan_store.get(plan_id)
+    existing, _ = await _load_plan(plan_id, user_id)
     if existing is None:
         raise HTTPException(status_code=404, detail="Plan not found")
     refreshed = await generate_plan(existing.request)
     refreshed.plan_id = plan_id
     refreshed.contingency_note = "Plan refreshed using the latest available conditions."
-    plan_store.save(refreshed)
+    await _save_plan(refreshed, user_id)
     return refreshed.model_dump(mode="json")

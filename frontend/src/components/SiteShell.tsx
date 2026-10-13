@@ -1,6 +1,9 @@
+import { useState } from 'react';
 import { Link, NavLink, Outlet } from 'react-router-dom';
 import { useFieldMode } from '../theme/useFieldMode';
+import { useAuth } from '../auth/useAuth';
 import Starfield from './Starfield';
+import AuthDialog from './AuthDialog';
 
 function NavItem({ to, label }: { to: string; label: string }) {
   return (
@@ -19,6 +22,8 @@ function NavItem({ to, label }: { to: string; label: string }) {
 
 export default function SiteShell() {
   const { fieldMode, toggleFieldMode } = useFieldMode();
+  const { configured, user, loading, signOut } = useAuth();
+  const [authOpen, setAuthOpen] = useState(false);
 
   return (
     <div className="nebula-bg relative min-h-svh">
@@ -41,27 +46,50 @@ export default function SiteShell() {
             <NavItem to="/plan" label="Plan" />
             <NavItem to="/trips" label="My trips" />
           </nav>
-          <button
-            type="button"
-            onClick={toggleFieldMode}
-            aria-pressed={fieldMode}
-            aria-label={fieldMode ? 'Leave red field mode' : 'Enter red field mode for use at the site'}
-            title={fieldMode ? 'Leave red field mode' : 'Enter red field mode for use at the site'}
-            className={`flex shrink-0 items-center gap-1.5 rounded-lg border px-2.5 py-1.5 font-display text-xs font-semibold transition-colors sm:px-3 ${
-              fieldMode
-                ? 'border-accent bg-accent/20 text-accent'
-                : 'border-space-600 text-stardim hover:border-accent/50 hover:text-accent'
-            }`}
-          >
-            <span aria-hidden="true">{fieldMode ? '●' : '○'}</span>
-            <span className="hidden sm:inline">{fieldMode ? 'Field mode on' : 'Field mode'}</span>
-          </button>
+          <div className="flex shrink-0 items-center gap-1.5">
+            {configured &&
+              (loading ? null : user ? (
+                <button
+                  type="button"
+                  onClick={() => void signOut()}
+                  title={user.email ?? 'Signed in'}
+                  className="max-w-28 truncate rounded-lg border border-space-600 px-2.5 py-1.5 font-display text-xs font-semibold text-stardim transition-colors hover:border-accent/50 hover:text-accent sm:max-w-40"
+                >
+                  {user.email ?? 'Account'} · out
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setAuthOpen(true)}
+                  className="rounded-lg border border-accent/50 px-2.5 py-1.5 font-display text-xs font-semibold text-accent transition-colors hover:bg-accent/10"
+                >
+                  Sign in
+                </button>
+              ))}
+            <button
+              type="button"
+              onClick={toggleFieldMode}
+              aria-pressed={fieldMode}
+              aria-label={fieldMode ? 'Leave red field mode' : 'Enter red field mode for use at the site'}
+              title={fieldMode ? 'Leave red field mode' : 'Enter red field mode for use at the site'}
+              className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 font-display text-xs font-semibold transition-colors sm:px-3 ${
+                fieldMode
+                  ? 'border-accent bg-accent/20 text-accent'
+                  : 'border-space-600 text-stardim hover:border-accent/50 hover:text-accent'
+              }`}
+            >
+              <span aria-hidden="true">{fieldMode ? '●' : '○'}</span>
+              <span className="hidden sm:inline">{fieldMode ? 'Field mode on' : 'Field mode'}</span>
+            </button>
+          </div>
         </div>
       </header>
 
       <main className="relative z-10 mx-auto w-full max-w-6xl px-4 pb-20 sm:px-6">
         <Outlet />
       </main>
+
+      <AuthDialog key={String(authOpen)} open={authOpen} onClose={() => setAuthOpen(false)} />
 
       <footer className="relative z-10 border-t border-space-600/50 py-8">
         <div className="mx-auto flex max-w-6xl flex-col items-center gap-2 px-4 text-center sm:px-6">

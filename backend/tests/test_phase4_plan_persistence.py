@@ -60,3 +60,27 @@ def test_plan_list_endpoint_returns_created_plans(tmp_path: Path, monkeypatch):
                 assert listed.status_code == 200
                 ids = [entry["plan_id"] for entry in listed.json()]
                 assert plan_id in ids
+
+
+def test_plan_delete_removes_local_plan(tmp_path: Path, monkeypatch):
+    store = PlanStore(tmp_path / "plans.db")
+    monkeypatch.setattr("app.main.plan_store", store)
+    with patch("app.agents.weather.fetch_astro_weather", new_callable=AsyncMock, return_value=None):
+        with patch("app.agents.story.chat_completion", new_callable=AsyncMock, side_effect=Exception("offline")):
+            with TestClient(app) as client:
+                created = client.post("/plan", json={
+                    "user_lat": 12.9716, "user_lon": 77.5946,
+                    "date_start": "2026-12-12", "date_end": "2026-12-12",
+                })
+                plan_id = created.json()["plan_id"]
+
+                deleted = client.delete(f"/plans/{plan_id}")
+                assert deleted.status_code == 200
+                assert deleted.json()["deleted"] == plan_id
+                assert client.get(f"/plans/{plan_id}").status_code == 404
+
+
+def test_plan_delete_missing_returns_404(tmp_path: Path, monkeypatch):
+    monkeypatch.setattr("app.main.plan_store", PlanStore(tmp_path / "plans.db"))
+    with TestClient(app) as client:
+        assert client.delete("/plans/does-not-exist").status_code == 404

@@ -29,7 +29,9 @@ describe('frontend API configuration', () => {
 
         await fetchPlan(request);
 
-        expect(axios.post).toHaveBeenCalledWith('http://localhost:8000/plan', request);
+        expect(axios.post).toHaveBeenCalledWith('http://localhost:8000/plan', request, {
+            headers: {},
+        });
     });
 
     it('propagates backend request failures to the caller', async () => {

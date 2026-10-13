@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { ExpeditionPlan } from '../types';
-import { fetchPlanById, fetchPlans, loadTripIds, refreshPlan, removeTripId } from '../api';
+import { deletePlan, fetchPlanById, fetchPlans, loadTripIds, refreshPlan, removeTripId } from '../api';
 import type { PlanSummary } from '../api';
+import { useAuth } from '../auth/useAuth';
 import Highlights from '../components/Highlights';
 import PlanOptions from '../components/PlanOptions';
 import NightPlans from '../components/NightPlans';
@@ -10,12 +11,14 @@ import GearStory from '../components/GearStory';
 import { Button, Card, EmptyState, SectionHeading } from '../components/ui';
 
 export default function Trips() {
+  const { user } = useAuth();
   const [summaries, setSummaries] = useState<PlanSummary[]>([]);
   const [openId, setOpenId] = useState<string | null>(null);
   const [openPlan, setOpenPlan] = useState<ExpeditionPlan | null>(null);
   const [loadingList, setLoadingList] = useState(true);
   const [loadingPlan, setLoadingPlan] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [confirmForget, setConfirmForget] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const loadList = useCallback(async () => {
@@ -23,31 +26,9 @@ export default function Trips() {
     setError(null);
     try {
       const server = await fetchPlans();
-      const localIds = loadTripIds();
-      const merged = new Map<string, PlanSummary>();
-      for (const s of server) merged.set(s.plan_id, s);
-      for (const id of localIds) {
-        if (!merged.has(id)) merged.set(id, { plan_id: id });
-      }
-      setSummaries([...merged.values()]);
-    } catch (err: unknown) {
-      const localIds = loadTripIds();
-      if (localIds.length > 0) {
-        setSummaries(localIds.map((plan_id) => ({ plan_id })));
+      if (user) {
+        setSummaries(server);
       } else {
-        setError(err instanceof Error ? err.message : 'Could not load trips.');
-      }
-    } finally {
-      setLoadingList(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    let alive = true;
-    (async () => {
-      try {
-        const server = await fetchPlans();
-        if (!alive) return;
         const localIds = loadTripIds();
         const merged = new Map<string, PlanSummary>();
         for (const s of server) merged.set(s.plan_id, s);
@@ -55,10 +36,44 @@ export default function Trips() {
           if (!merged.has(id)) merged.set(id, { plan_id: id });
         }
         setSummaries([...merged.values()]);
+      }
+    } catch (err: unknown) {
+      if (user) {
+        setError(err instanceof Error ? err.message : 'Could not load trips.');
+      } else {
+        const localIds = loadTripIds();
+        if (localIds.length > 0) {
+          setSummaries(localIds.map((plan_id) => ({ plan_id })));
+        } else {
+          setError(err instanceof Error ? err.message : 'Could not load trips.');
+        }
+      }
+    } finally {
+      setLoadingList(false);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const server = await fetchPlans();
+        if (!alive) return;
+        if (user) {
+          setSummaries(server);
+        } else {
+          const localIds = loadTripIds();
+          const merged = new Map<string, PlanSummary>();
+          for (const s of server) merged.set(s.plan_id, s);
+          for (const id of localIds) {
+            if (!merged.has(id)) merged.set(id, { plan_id: id });
+          }
+          setSummaries([...merged.values()]);
+        }
       } catch (err: unknown) {
         if (!alive) return;
         const localIds = loadTripIds();
-        if (localIds.length > 0) {
+        if (!user && localIds.length > 0) {
           setSummaries(localIds.map((plan_id) => ({ plan_id })));
         } else {
           setError(err instanceof Error ? err.message : 'Could not load trips.');
@@ -70,7 +85,7 @@ export default function Trips() {
     return () => {
       alive = false;
     };
-  }, []);
+  }, [user]);
 
   const openTrip = async (planId: string) => {
     setOpenId(planId);
@@ -101,12 +116,28 @@ export default function Trips() {
     }
   };
 
-  const handleRemove = (planId: string) => {
-    const remaining = removeTripId(planId);
-    setSummaries((prev) => prev.filter((s) => remaining.includes(s.plan_id)));
-    if (openId === planId) {
-      setOpenId(null);
-      setOpenPlan(null);
+  const handleForget = async (planId: string) => {
+    if (confirmForget !== planId) {
+      setConfirmForget(planId);
+      window.setTimeout(() => setConfirmForget((c) => (c === planId ? null : c)), 4000);
+      return;
+    }
+    setConfirmForget(null);
+    setError(null);
+    try {
+      if (user) {
+        await deletePlan(planId);
+        setSummaries((prev) => prev.filter((s) => s.plan_id !== planId));
+      } else {
+        const remaining = removeTripId(planId);
+        setSummaries((prev) => prev.filter((s) => remaining.includes(s.plan_id)));
+      }
+      if (openId === planId) {
+        setOpenId(null);
+        setOpenPlan(null);
+      }
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Could not remove trip.');
     }
   };
 
@@ -122,7 +153,7 @@ export default function Trips() {
           </Button>
         </div>
         {openPlan.contingency_note && (
-          <div className="rounded-xl border border-warn/40 bg-warn/10 p-4 text-sm text-warn" role="status">
+          <div className="break-words rounded-xl border border-warn/40 bg-warn/10 p-4 text-sm text-warn" role="status">
             {openPlan.contingency_note}
           </div>
         )}
@@ -142,9 +173,11 @@ export default function Trips() {
   return (
     <div className="pt-10">
       <SectionHeading
-        kicker="Saved"
+        kicker={user ? `Signed in as ${user.email ?? 'you'}` : 'Saved'}
         title="My trips"
-        lede="Every generated expedition is kept. Reopen it, or refresh it against live weather before you leave."
+        lede={user
+          ? 'Your expeditions persist under your account. Reopen, refresh, or remove them.'
+          : 'Sign in to keep trips under your account. Anonymous trips live in this browser only.'}
       />
       {error && (
         <div className="mx-auto mb-4 max-w-2xl rounded-xl border border-danger/40 bg-danger/10 p-4 text-sm text-danger" role="alert">
@@ -169,8 +202,8 @@ export default function Trips() {
         <div className="mx-auto grid max-w-3xl gap-3">
           {summaries.map((trip) => (
             <Card key={trip.plan_id} className="flex flex-wrap items-center justify-between gap-3 p-4 sm:px-5">
-              <div>
-                <p className="font-display text-sm font-semibold text-starlight">
+              <div className="min-w-0">
+                <p className="truncate font-display text-sm font-semibold text-starlight">
                   {trip.site_name ?? 'Expedition'}
                   {trip.date_start && (
                     <span className="ml-2 font-body text-xs font-normal text-starfaint">
@@ -187,8 +220,8 @@ export default function Trips() {
                 <Button variant="ghost" onClick={() => void openTrip(trip.plan_id)}>
                   Open
                 </Button>
-                <Button variant="danger-ghost" onClick={() => handleRemove(trip.plan_id)}>
-                  Forget
+                <Button variant="danger-ghost" onClick={() => void handleForget(trip.plan_id)}>
+                  {confirmForget === trip.plan_id ? 'Confirm?' : 'Forget'}
                 </Button>
               </div>
             </Card>

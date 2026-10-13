@@ -1,7 +1,9 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import type { ExpeditionPlan, PlanRequest } from '../types';
 import { fetchPlan, saveTripId } from '../api';
+import { useAuth } from '../auth/useAuth';
 import InputForm from '../components/InputForm';
 import LoadingJourney from '../components/LoadingJourney';
 import Highlights from '../components/Highlights';
@@ -12,6 +14,7 @@ import Starfield from '../components/Starfield';
 import { Badge, Button, Card } from '../components/ui';
 
 export default function Planner() {
+  const { user } = useAuth();
   const [plan, setPlan] = useState<ExpeditionPlan | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -73,8 +76,13 @@ export default function Planner() {
               {' · '}Generated {new Date(plan.generated_at).toLocaleString()}
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {plan.plan_id && <Badge tone="neutral">Trip {plan.plan_id.slice(0, 8)}</Badge>}
+            {plan.plan_id && user && (
+              <Link to="/trips" className="text-xs font-semibold text-success hover:underline">
+                ✓ Saved to My trips
+              </Link>
+            )}
             <Button variant="ghost" onClick={() => { setPlan(null); setError(null); }}>
               ← New plan
             </Button>

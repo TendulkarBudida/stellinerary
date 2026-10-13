@@ -14,5 +14,10 @@ class Settings(BaseSettings):
     llm_api_key: str = ""
     llm_model: str = "gpt-4o"
 
+    # Supabase (auth + per-user trip persistence). Empty = anonymous-only mode.
+    supabase_url: str = ""
+    supabase_secret_key: str = ""
+    supabase_jwks_url: str = ""
+
 
 settings = Settings()

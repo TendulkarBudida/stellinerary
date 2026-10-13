@@ -59,6 +59,11 @@ class PlanStore:
             row = connection.execute("SELECT payload FROM plans WHERE plan_id = ?", (plan_id,)).fetchone()
         return ExpeditionPlan.model_validate_json(row["payload"]) if row else None
 
+    def delete(self, plan_id: str) -> bool:
+        with self._connection() as connection:
+            cursor = connection.execute("DELETE FROM plans WHERE plan_id = ?", (plan_id,))
+        return cursor.rowcount > 0
+
     def active(self, today: date | None = None) -> list[ExpeditionPlan]:
         today = today or date.today()
         with self._connection() as connection:
