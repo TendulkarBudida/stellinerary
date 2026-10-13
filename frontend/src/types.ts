@@ -41,6 +41,9 @@ export interface Site {
 export interface RankedSite {
     site: Site;
     distance_km: number;
+    travel_time_estimate_min?: number;
+    weather_score?: number;
+    bortle_score?: number;
     overall_score: number;
     event_visibility_score: number;
     score_components: Record<string, number>;
@@ -128,6 +131,7 @@ export interface ObjectStory {
 
 export interface ExpeditionPlan {
     request: PlanRequest;
+    plan_id?: string | null;
     ranked_events: CelestialEvent[];
     ranked_sites: RankedSite[];
     chosen_site?: Site | null;
@@ -138,4 +142,6 @@ export interface ExpeditionPlan {
     gear?: GearList | null;
     stories: ObjectStory[];
     generated_at: string;
+    updated_at?: string | null;
+    contingency_note?: string | null;
 }

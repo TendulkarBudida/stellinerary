@@ -41,3 +41,22 @@ def test_plan_endpoints_persist_retrieve_and_refresh(tmp_path: Path, monkeypatch
     assert refreshed.status_code == 200
     assert refreshed.json()["plan_id"] == plan_id
     assert "refreshed" in refreshed.json()["contingency_note"].lower()
+
+
+def test_plan_list_endpoint_returns_created_plans(tmp_path: Path, monkeypatch):
+    store = PlanStore(tmp_path / "plans.db")
+    monkeypatch.setattr("app.main.plan_store", store)
+    with patch("app.agents.weather.fetch_astro_weather", new_callable=AsyncMock, return_value=None):
+        with patch("app.agents.story.chat_completion", new_callable=AsyncMock, side_effect=Exception("offline")):
+            with TestClient(app) as client:
+                created = client.post("/plan", json={
+                    "user_lat": 12.9716, "user_lon": 77.5946,
+                    "date_start": "2026-12-12", "date_end": "2026-12-12",
+                })
+                assert created.status_code == 200
+                plan_id = created.json()["plan_id"]
+
+                listed = client.get("/plans")
+                assert listed.status_code == 200
+                ids = [entry["plan_id"] for entry in listed.json()]
+                assert plan_id in ids

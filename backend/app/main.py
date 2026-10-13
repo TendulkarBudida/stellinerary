@@ -87,6 +87,24 @@ async def create_plan(request: PlanRequest):
     return plan.model_dump(mode="json")
 
 
+@app.get("/plans", tags=["plan"])
+async def list_plans():
+    """List upcoming persisted plans (newest update first)."""
+    plans = plan_store.active()
+    summaries = [
+        {
+            "plan_id": plan.plan_id,
+            "observation_end": plan.request.date_end.isoformat(),
+            "updated_at": plan.updated_at.isoformat() if plan.updated_at else None,
+            "site_name": plan.chosen_site.name if plan.chosen_site else None,
+            "date_start": plan.request.date_start.isoformat(),
+        }
+        for plan in plans
+    ]
+    summaries.sort(key=lambda s: s["updated_at"] or "", reverse=True)
+    return summaries
+
+
 @app.get("/plans/{plan_id}", tags=["plan"])
 async def get_plan(plan_id: str):
     """Retrieve a persisted plan, including any contingency updates."""
