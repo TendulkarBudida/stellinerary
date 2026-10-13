@@ -183,7 +183,7 @@ export default function Trips() {
                   {trip.updated_at && ` · updated ${new Date(trip.updated_at).toLocaleString()}`}
                 </p>
               </div>
-              <div className="flex gap-2">
+              <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto">
                 <Button variant="ghost" onClick={() => void openTrip(trip.plan_id)}>
                   Open
                 </Button>

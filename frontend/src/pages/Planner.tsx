@@ -83,7 +83,7 @@ export default function Planner() {
       </Card>
 
       {plan.contingency_note && (
-        <div className="rounded-xl border border-warn/40 bg-warn/10 p-4 text-sm text-warn" role="status">
+        <div className="break-words rounded-xl border border-warn/40 bg-warn/10 p-4 text-sm text-warn" role="status">
           {plan.contingency_note}
         </div>
       )}

@@ -73,13 +73,13 @@ export default function Landing() {
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.65, delay: 0.24 }}
-            className="mt-8 flex flex-wrap items-center justify-center gap-3"
+            className="mx-auto mt-8 flex max-w-md flex-col items-stretch justify-center gap-3 sm:max-w-none sm:flex-row sm:items-center"
           >
-            <Link to="/plan">
-              <Button>Plan an expedition</Button>
+            <Link to="/plan" className="w-full sm:w-auto">
+              <Button className="w-full sm:w-auto">Plan an expedition</Button>
             </Link>
-            <a href="#how">
-              <Button variant="ghost">How it works</Button>
+            <a href="#how" className="w-full sm:w-auto">
+              <Button variant="ghost" className="w-full sm:w-auto">How it works</Button>
             </a>
           </motion.div>
           <motion.div

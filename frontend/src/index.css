@@ -56,6 +56,21 @@ body {
   color: var(--color-starlight);
   -webkit-font-smoothing: antialiased;
   min-height: 100svh;
+  overflow-x: clip;
+  -webkit-tap-highlight-color: transparent;
+}
+
+img,
+canvas,
+svg {
+  max-width: 100%;
+}
+
+input,
+select,
+button {
+  min-width: 0;
+  max-width: 100%;
 }
 
 ::selection {

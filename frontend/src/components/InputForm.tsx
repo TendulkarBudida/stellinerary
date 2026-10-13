@@ -19,7 +19,7 @@ const CITIES = [
 ];
 
 const inputCls =
-  'w-full rounded-lg border border-space-600 bg-space-950 px-3.5 py-2.5 text-sm text-starlight placeholder:text-starfaint focus:border-accent focus:outline-none';
+  'w-full rounded-lg border border-space-600 bg-space-950 px-3.5 py-2.5 text-base text-starlight placeholder:text-starfaint focus:border-accent focus:outline-none sm:text-sm';
 const labelCls = 'mb-1.5 block font-display text-xs font-semibold uppercase tracking-wider text-stardim';
 
 const STEP_TITLES = ['Where are you?', 'Which nights?', 'How do you observe?'];
@@ -111,7 +111,7 @@ const InputForm: React.FC<InputFormProps> = ({ onSubmit, isLoading }) => {
                 </button>
               ))}
             </div>
-            <div className="mt-4 grid gap-4 sm:grid-cols-3">
+            <div className="mt-4 grid gap-4 sm:grid-cols-3 [&>*]:min-w-0">
               <div>
                 <label className={labelCls} htmlFor="city">City label</label>
                 <input id="city" className={inputCls} value={city} onChange={(e) => setCity(e.target.value)} placeholder="Bangalore" />
@@ -132,7 +132,7 @@ const InputForm: React.FC<InputFormProps> = ({ onSubmit, isLoading }) => {
           <div>
             <h2 className="font-display text-xl font-semibold text-starlight">Which nights can you go?</h2>
             <p className="mt-1 text-sm text-stardim">Up to 14 nights. Each night gets its own schedule and forecast check.</p>
-            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            <div className="mt-4 grid gap-4 sm:grid-cols-2 [&>*]:min-w-0">
               <div>
                 <label className={labelCls} htmlFor="dateStart">First night</label>
                 <input id="dateStart" className={inputCls} type="date" value={dateStart} onChange={(e) => setDateStart(e.target.value)} required />
@@ -152,7 +152,7 @@ const InputForm: React.FC<InputFormProps> = ({ onSubmit, isLoading }) => {
           <div>
             <h2 className="font-display text-xl font-semibold text-starlight">How do you observe?</h2>
             <p className="mt-1 text-sm text-stardim">This tunes event ranking, the schedule, and your packing list.</p>
-            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            <div className="mt-4 grid gap-4 sm:grid-cols-2 [&>*]:min-w-0">
               <div>
                 <label className={labelCls} htmlFor="equipment">Equipment</label>
                 <select id="equipment" className={inputCls} value={equipment} onChange={(e) => setEquipment(e.target.value as PlanRequest['equipment_level'])}>

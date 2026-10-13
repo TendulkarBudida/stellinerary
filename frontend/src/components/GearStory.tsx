@@ -42,7 +42,7 @@ const GearStory: React.FC<GearStoryProps> = ({ gear, stories }) => {
           {gear.warnings.length > 0 && (
             <div className="mb-4 space-y-2 rounded-xl border border-danger/30 bg-danger/5 p-3.5" role="alert">
               {gear.warnings.map((w, i) => (
-                <p key={i} className="text-[13px] leading-relaxed text-danger">⚠ {w}</p>
+                <p key={i} className="break-words text-[13px] leading-relaxed text-danger">⚠ {w}</p>
               ))}
             </div>
           )}

@@ -81,7 +81,7 @@ const PlanOptions: React.FC<PlanOptionsProps> = ({ options, rankedSites, stories
               <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-warn">Tradeoffs</p>
               <ul className="space-y-1">
                 {option.tradeoffs.map((tradeoff) => (
-                  <li key={tradeoff} className="text-sm text-warn/90">• {tradeoff}</li>
+                  <li key={tradeoff} className="break-words text-sm text-warn/90">• {tradeoff}</li>
                 ))}
               </ul>
             </div>
