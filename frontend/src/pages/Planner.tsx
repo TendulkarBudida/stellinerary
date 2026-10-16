@@ -11,7 +11,7 @@ import PlanOptions from '../components/PlanOptions';
 import NightPlans from '../components/NightPlans';
 import GearStory from '../components/GearStory';
 import Starfield from '../components/Starfield';
-import { Badge, Button, Card } from '../components/ui';
+import { Badge, Button, Card, EmptyState } from '../components/ui';
 
 export default function Planner() {
   const { user } = useAuth();
@@ -78,6 +78,9 @@ export default function Planner() {
           </div>
           <div className="flex flex-wrap items-center gap-2">
             {plan.plan_id && <Badge tone="neutral">Trip {plan.plan_id.slice(0, 8)}</Badge>}
+            {plan.chosen_site?.source === 'discovered' && (
+              <Badge tone="warn">Community find — verify access</Badge>
+            )}
             {plan.plan_id && user && (
               <Link to="/trips" className="text-xs font-semibold text-success hover:underline">
                 ✓ Saved to My trips
@@ -104,7 +107,12 @@ export default function Planner() {
           <NightPlans site={plan.chosen_site} nights={plan.night_plans} />
           <GearStory gear={plan.gear} stories={plan.stories} />
         </>
-      ) : null}
+      ) : (
+        <EmptyState
+          title="No observing sites found"
+          body="No usable site matched your location and travel limits, or the map service was unreachable. Widen the drive time, allow overnight trips, and try again."
+        />
+      )}
     </motion.div>
   );
 }

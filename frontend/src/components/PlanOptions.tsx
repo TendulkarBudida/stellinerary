@@ -67,6 +67,9 @@ const PlanOptions: React.FC<PlanOptionsProps> = ({ options, rankedSites, stories
             </h3>
             <ConfidenceBadge confidence={option.confidence} />
             {option.site.bortle_class != null && <Badge tone="neutral">Bortle {option.site.bortle_class}</Badge>}
+            {option.site.source === 'discovered' && (
+              <Badge tone="warn">Community find — verify access</Badge>
+            )}
           </div>
           <ul className="mt-3 space-y-1.5">
             {option.reasons.map((reason) => (

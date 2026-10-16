@@ -18,8 +18,9 @@ from app.agents.choreographer import (
     _get_min_altitude_for_azimuth,
     _azimuth_in_arc,
 )
-from app.data.loader import load_events, get_site_by_id
+from app.data.loader import load_events
 from app.models import PlanRequest, Site
+from tests.fixtures import far_valley, flat_plain, mid_ridge
 
 
 # ── Choreographer tests ──────────────────────────────────────────────
@@ -38,13 +39,13 @@ class TestHorizonHelpers:
 
     def test_min_altitude_clear_horizon(self):
         """Site with no blocked directions → 0° minimum altitude."""
-        site = get_site_by_id("rann_of_kutch")  # Flat terrain, 360° horizon
+        site = flat_plain()  # Flat terrain, 360° horizon
         alt = _get_min_altitude_for_azimuth(site, 90)
         assert alt == 0.0
 
     def test_min_altitude_blocked_direction(self):
         """Site with blocked directions returns the blocked altitude."""
-        site = get_site_by_id("nandi_hills")
+        site = mid_ridge()
         # Nandi Hills has blocked directions — check one
         if site.horizon_profile.blocked_directions:
             block = site.horizon_profile.blocked_directions[0]
@@ -55,7 +56,7 @@ class TestHorizonHelpers:
 
 class TestChoreographer:
     def test_schedule_includes_dark_adaptation(self):
-        site = get_site_by_id("nandi_hills")
+        site = mid_ridge()
         events = [e for e in load_events() if e.type == "meteor_shower"][:2]
         schedule = generate_schedule(site, events, None, date(2026, 12, 14))
         
@@ -64,7 +65,7 @@ class TestChoreographer:
             f"Dark adaptation entry missing. Got: {titles}"
 
     def test_schedule_entries_are_time_sorted(self):
-        site = get_site_by_id("nandi_hills")
+        site = mid_ridge()
         events = [e for e in load_events() if e.type == "meteor_shower"][:2]
         schedule = generate_schedule(site, events, None, date(2026, 12, 14))
         
@@ -72,7 +73,7 @@ class TestChoreographer:
         assert times == sorted(times), f"Entries not time-sorted: {times}"
 
     def test_schedule_has_twilight_info(self):
-        site = get_site_by_id("nandi_hills")
+        site = mid_ridge()
         events = [e for e in load_events() if e.type == "opposition"][:1]
         schedule = generate_schedule(site, events, None, date(2026, 10, 3))
         
@@ -80,7 +81,7 @@ class TestChoreographer:
         assert schedule.astronomical_twilight_start is not None
 
     def test_schedule_has_moon_info(self):
-        site = get_site_by_id("nandi_hills")
+        site = mid_ridge()
         events = [e for e in load_events() if e.type == "opposition"][:1]
         schedule = generate_schedule(site, events, None, date(2026, 10, 3))
         
@@ -88,7 +89,7 @@ class TestChoreographer:
         assert 0 <= schedule.moon_phase_pct <= 100
 
     def test_meteor_shower_schedule_has_direction(self):
-        site = get_site_by_id("coorg_madikeri")
+        site = far_valley()
         geminids = [e for e in load_events() if e.id == "geminids_2026"]
         if geminids:
             schedule = generate_schedule(site, geminids, None, date(2026, 12, 14))

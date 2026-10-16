@@ -185,9 +185,6 @@ async def generate_plan(request: PlanRequest) -> ExpeditionPlan:
     # ── Step 2: Location Scout — where to go? ─────────────────────────
     logger.info("📍 [2/6] Location Scout: ranking sites near (%.2f, %.2f)", request.user_lat, request.user_lon)
 
-    from app.data.loader import load_sites
-    metrics.candidates_before_shortlist = len(load_sites())
-
     cache_before = get_cache_stats()
     weather_start = perf_counter()
     plan.ranked_sites = await rank_sites(
@@ -200,13 +197,13 @@ async def generate_plan(request: PlanRequest) -> ExpeditionPlan:
         max_travel_minutes=request.max_travel_minutes,
         max_distance_km=request.max_distance_km,
         overnight_allowed=request.overnight_allowed,
+        metrics=metrics,
     )
     weather_elapsed = (perf_counter() - weather_start) * 1000
     metrics_collector.record_weather_latency(metrics, weather_elapsed)
     cache_after = get_cache_stats()
     metrics.weather_cache_hits = cache_after["hits"] - cache_before["hits"]
     metrics.weather_cache_misses = cache_after["misses"] - cache_before["misses"]
-    metrics.candidates_after_shortlist = len(plan.ranked_sites)
     logger.info("   → %d sites ranked", len(plan.ranked_sites))
 
     if plan.ranked_sites:

@@ -4,7 +4,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
-from app.data.loader import load_events, load_sites
+from app.data.loader import load_events
 from app.models import PlanRequest
 from app.orchestrator import generate_plan
 from app.services.auth import get_optional_user_id
@@ -58,10 +58,11 @@ async def root():
 # ── Debug endpoints (Step 2 verification) ─────────────────────────────
 
 @app.get("/debug/sites", tags=["debug"])
-async def debug_sites():
-    """Return all loaded sites for verification."""
-    sites = load_sites()
-    return {"count": len(sites), "sites": [s.model_dump() for s in sites]}
+async def debug_sites(lat: float = 12.9716, lon: float = 77.5946):
+    """Return live-discovered candidate places near a location for verification."""
+    from app.services import site_discovery
+    places = site_discovery.discover_places(lat, lon)
+    return {"count": len(places), "places": places}
 
 
 @app.get("/debug/events", tags=["debug"])

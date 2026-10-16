@@ -88,7 +88,7 @@ export default function Landing() {
             transition={{ duration: 0.8, delay: 0.4 }}
             className="mt-10 flex flex-wrap items-center justify-center gap-2 text-xs text-stardim"
           >
-            {['10 curated dark-sky sites', '6-step planning pipeline', 'Plan A · B · C output', 'Forecast-honest scheduling'].map((chip) => (
+            {['Live site discovery', '6-step planning pipeline', 'Plan A · B · C output', 'Forecast-honest scheduling'].map((chip) => (
               <span key={chip} className="rounded-full border border-space-600 bg-space-950/70 px-3 py-1.5">
                 {chip}
               </span>

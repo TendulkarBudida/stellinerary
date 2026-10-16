@@ -68,7 +68,7 @@ class UserInput(BaseModel):
 
 
 class SiteInfo(BaseModel):
-    """One dark-sky site from sites.json, enriched by Location Scout."""
+    """One live-discovered dark-sky site, enriched by Location Scout."""
     id: str
     name: str
     lat: float

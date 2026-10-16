@@ -1,13 +1,17 @@
 """Constraint-aware, event-aware observing-site ranking."""
 
 import asyncio
+import logging
 import math
 from datetime import date, datetime, timezone
 
 from app.agents.weather import get_weather_forecast
-from app.data.loader import load_sites
 from app.models import CelestialEvent, RankedSite, Site, SiteWeatherForecast
 from app.services.ephemeris import compute_altitude_azimuth, compute_altitude_azimuth_radec
+from app.services import site_discovery
+from app.services.metrics import PipelineMetrics, metrics_collector
+
+logger = logging.getLogger(__name__)
 
 WEIGHT_EVENT_VISIBILITY = 0.30
 WEIGHT_WEATHER = 0.25
@@ -82,10 +86,19 @@ async def rank_sites(
     events: list[CelestialEvent] | None = None, observation_dates: list[date] | None = None,
     max_travel_minutes: int | None = None, max_distance_km: float | None = None,
     overnight_allowed: bool = False, shortlist_size: int = DEFAULT_SHORTLIST_SIZE,
+    discover: bool = True, metrics: PipelineMetrics | None = None,
 ) -> list[RankedSite]:
-    """Filter cheaply, fetch a bounded weather shortlist concurrently, then score."""
+    """Filter cheaply, fetch a bounded weather shortlist concurrently, then score.
+
+    Sites come exclusively from live discovery. With discover=False (tests),
+    no sites are considered. An empty result means no usable site was found —
+    the pipeline surfaces that instead of substituting anything.
+    """
+    sites = _discovered_sites(user_lat, user_lon, max_results, max_travel_minutes, max_distance_km) if discover else []
+    if metrics is not None:
+        metrics.candidates_before_shortlist = len(sites)
     candidates: list[tuple[Site, float, int, float, float]] = []
-    for site in load_sites():
+    for site in sites:
         distance = _haversine_km(user_lat, user_lon, site.lat, site.lon)
         travel_minutes = _estimate_travel_time_min(distance)
         if (max_distance_km is not None and distance > max_distance_km) or (max_travel_minutes is not None and travel_minutes > max_travel_minutes):
@@ -109,11 +122,14 @@ async def rank_sites(
         overall = WEIGHT_EVENT_VISIBILITY * event_s + WEIGHT_WEATHER * weather_s + WEIGHT_BORTLE * bortle_s + WEIGHT_DISTANCE * distance_s
         if not site.access.night_access:
             overall *= 0.5
-        reasons = [f"Bortle {site.bortle_class}", f"{distance:.0f} km away (~{travel_minutes} min drive)"]
+        reasons = [f"Bortle {site.bortle_class}" + (" (estimated)" if site.source == "discovered" else ""),
+                     f"{distance:.0f} km away (~{travel_minutes} min drive)"]
         reasons.append("Priority targets clear the site horizon" if event_s >= 0.6 else "Some priority targets may be low or terrain-blocked")
         reasons.append("Clear-weather window available" if weather_s >= 0.7 else "Weather is mixed or unverified")
         if not site.access.night_access:
             reasons.append("Night access restricted")
+        if site.source == "discovered":
+            reasons.append("Community-found site — confirm night access before travelling")
         ranked.append(RankedSite(
             site=site, distance_km=round(distance, 1), travel_time_estimate_min=travel_minutes,
             weather_score=round(weather_s, 3), bortle_score=round(bortle_s, 3), event_visibility_score=event_s,
@@ -122,4 +138,36 @@ async def rank_sites(
             ranking_reason=". ".join(reasons) + ".",
         ))
     ranked.sort(key=lambda item: item.overall_score, reverse=True)
-    return ranked[:max_results]
+    final = ranked[:max_results]
+    if metrics is not None:
+        metrics.candidates_after_shortlist = len(final)
+    return final
+
+
+def _discovered_sites(
+    user_lat: float, user_lon: float, max_results: int,
+    max_travel_minutes: int | None, max_distance_km: float | None,
+) -> list[Site]:
+    """Find live OSM candidate sites, filtered and deduped. Never raises."""
+    try:
+        radius_km = max_distance_km or (max_travel_minutes * AVG_SPEED_KMH / 60 if max_travel_minutes else 150.0)
+        radius_km = min(max(radius_km, 30.0), 300.0)
+        places = site_discovery.discover_places(user_lat, user_lon, radius_m=int(radius_km * 1000))
+        sites: list[Site] = []
+        for place in places:
+            if any(_haversine_km(place["lat"], place["lon"], s.lat, s.lon) < 2.0 for s in sites):
+                continue
+            site = site_discovery.place_to_site(place)
+            distance = _haversine_km(user_lat, user_lon, site.lat, site.lon)
+            if max_distance_km is not None and distance > max_distance_km:
+                continue
+            if max_travel_minutes is not None and _estimate_travel_time_min(distance) > max_travel_minutes:
+                continue
+            sites.append(site)
+            if len(sites) >= max_results:
+                break
+        logger.info("Using %d discovered sites near (%.2f, %.2f)", len(sites), user_lat, user_lon)
+        return sites
+    except Exception as e:
+        logger.warning("Site discovery failed; no sites available: %s", e)
+        return []

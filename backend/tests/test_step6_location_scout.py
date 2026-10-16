@@ -70,7 +70,7 @@ class TestScoringFunctions:
 class TestRankSites:
     @pytest.mark.asyncio
     async def test_ranking_from_bangalore_without_weather(self):
-        """Nandi Hills / Savandurga should rank near top from Bangalore (by distance+bortle)."""
+        """Closest discovered site should rank near top from Bangalore (by distance+bortle)."""
         ranked = await rank_sites(
             BANGALORE_LAT, BANGALORE_LON,
             max_results=10,
@@ -79,12 +79,9 @@ class TestRankSites:
         assert len(ranked) > 0
         assert all(isinstance(r, RankedSite) for r in ranked)
 
-        # Top 3 should include nearby sites
+        # Closest fixture site should be in the top 3
         top_3_ids = [r.site.id for r in ranked[:3]]
-        nearby_sites = {"nandi_hills", "skandagiri", "savandurga"}
-        assert len(nearby_sites & set(top_3_ids)) >= 1, (
-            f"Expected at least one of {nearby_sites} in top 3, got {top_3_ids}"
-        )
+        assert "close-camp" in top_3_ids, f"Expected close-camp in top 3, got {top_3_ids}"
 
     @pytest.mark.asyncio
     async def test_scores_are_sorted_descending(self):
@@ -93,18 +90,15 @@ class TestRankSites:
         assert scores == sorted(scores, reverse=True)
 
     @pytest.mark.asyncio
-    async def test_distant_bortle_1_can_beat_nearby_bortle_5(self):
-        """A pristine dark sky site far away should potentially outrank a light-polluted nearby site."""
+    async def test_distant_bortle_3_outscores_nearby_bortle_4_on_darkness(self):
+        """A darker far site should beat a brighter near site on the Bortle component."""
         ranked = await rank_sites(BANGALORE_LAT, BANGALORE_LON, max_results=10, fetch_weather=False)
 
-        # Find Coorg (Bortle 3, ~265km) and Savandurga (Bortle 5, ~48km)
-        coorg = next((r for r in ranked if r.site.id == "coorg_madikeri"), None)
-        savandurga = next((r for r in ranked if r.site.id == "savandurga"), None)
+        far = next((r for r in ranked if r.site.id == "far-valley"), None)
+        close = next((r for r in ranked if r.site.id == "close-camp"), None)
 
-        if coorg and savandurga:
-            # Coorg's much darker sky should give it a competitive score despite distance
-            assert coorg.bortle_score > savandurga.bortle_score
-            # The overall ranking depends on weights, but Bortle score should reflect darkness
+        assert far is not None and close is not None
+        assert far.bortle_score > close.bortle_score
 
     @pytest.mark.asyncio
     async def test_max_results_limits_output(self):

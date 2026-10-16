@@ -62,6 +62,7 @@ class Site(BaseModel):
     id: str
     name: str
     state: str
+    source: str = Field(default="discovered", description="Provenance of the site entry; all sites are live OSM finds")
     lat: float = Field(..., ge=-90, le=90)
     lon: float = Field(..., ge=-180, le=180)
     altitude_m: int = Field(..., ge=0)

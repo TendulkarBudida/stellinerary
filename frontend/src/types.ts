@@ -36,6 +36,7 @@ export interface Site {
     lon: number;
     altitude_m: number;
     bortle_class: number;
+    source?: string;
 }
 
 export interface RankedSite {
